@@ -1,0 +1,62 @@
+[
+  {
+    "id": "hours",
+    "question": "What are the surgery's opening hours?",
+    "answer": "The surgery is open Monday to Friday, 8 AM to 6:30 PM. For urgent medical concerns outside these hours, please call NHS 111. In a medical emergency, always call 999."
+  },
+  {
+    "id": "register",
+    "question": "How do I register as a new patient?",
+    "answer": "You can register online through the NHS App or our website, or in person at the surgery. You'll need proof of address and ID, and it helps to have your NHS number if you know it."
+  },
+  {
+    "id": "nhs_number",
+    "question": "I don't know my NHS number, what do I do?",
+    "answer": "That's fine, you don't need it to register or be seen. We can look it up for you, or you can find it on the NHS App, on a prescription, or on any letter from the NHS."
+  },
+  {
+    "id": "book_appointment",
+    "question": "How do I book a GP appointment?",
+    "answer": "You can book an appointment by phone, through the NHS App, or via our online booking system. If it's urgent, let us know when you call so we can prioritise accordingly."
+  },
+  {
+    "id": "bring_to_appointment",
+    "question": "What should I bring to my appointment?",
+    "answer": "Please bring a form of photo ID and a list of any medications you're currently taking. If it's your first appointment at the surgery, your NHS number is helpful too, though not essential."
+  },
+  {
+    "id": "bloodwork_prep",
+    "question": "How do I prepare for a blood test?",
+    "answer": "For most standard blood tests, we recommend fasting for 8 to 12 hours beforehand, water is fine. Preparation can vary depending on the specific test, so please check with whoever ordered it if you're unsure."
+  },
+  {
+    "id": "cancellation_policy",
+    "question": "How do I cancel or rearrange an appointment?",
+    "answer": "You can cancel or rearrange through the NHS App, by phone, or online, ideally with at least 24 hours' notice so the slot can be offered to another patient."
+  },
+  {
+    "id": "repeat_prescriptions",
+    "question": "How do I request a repeat prescription?",
+    "answer": "Repeat prescriptions can be requested through the NHS App, our online system, or by dropping a request in at the surgery. Please allow 2 working days for your prescription to be ready at the pharmacy."
+  },
+  {
+    "id": "telephone_video",
+    "question": "Can I have a telephone or video consultation instead of coming in?",
+    "answer": "Yes, many appointments can be done by phone or video where appropriate. Let us know your preference when booking and we'll confirm if it's suitable for what you need."
+  },
+  {
+    "id": "out_of_hours",
+    "question": "What should I do if I need medical help outside surgery hours?",
+    "answer": "For urgent but non-life-threatening concerns outside our opening hours, call NHS 111, who can advise you or direct you to the right service. For a medical emergency, always call 999 or go to A&E."
+  },
+  {
+    "id": "interpreter",
+    "question": "Can I get an interpreter for my appointment?",
+    "answer": "Yes, interpreter services are available. Please let us know your preferred language when booking so we can arrange this in advance."
+  },
+  {
+    "id": "parking",
+    "question": "Is there parking at the surgery?",
+    "answer": "Yes, there's a small patient car park at the front of the building, including accessible spaces. It can get busy during peak times, so allow a few extra minutes."
+  }
+]

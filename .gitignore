@@ -1,0 +1,14 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
+
+# Demo database (created on first run)
+data/surgery.db
+*.db
+
+# Logs hold call transcripts
+*.log
+run.log

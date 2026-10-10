@@ -1,0 +1,47 @@
+[
+  {
+    "id": "where_to_get_help",
+    "question": "Which NHS service should I use? 999, NHS 111, pharmacist, GP appointment, A&E, urgent help, not sure where to go",
+    "answer": "Call 999 for life-threatening emergencies. Call NHS 111 when you need urgent medical help or advice but it is not life-threatening, or when you are not sure what to do. A pharmacist can advise on minor illnesses without an appointment. Book a GP appointment for problems that are not urgent but are not getting better or keep coming back."
+  },
+  {
+    "id": "emergency_signs",
+    "question": "Emergency warning signs, when to call 999: chest pain, difficulty breathing, stroke, face drooping, arm weakness, slurred speech, severe bleeding, collapse, unconscious, seizure, choking",
+    "answer": "Call 999 straight away for: chest pain or pressure, severe difficulty breathing, signs of a stroke (face drooping, arm weakness, slurred speech), severe bleeding that will not stop, collapse or loss of consciousness, choking, or a seizure that is a first one or lasts more than five minutes. Do not wait for a GP appointment."
+  },
+  {
+    "id": "common_cold",
+    "question": "Common cold: runny nose, blocked nose, sneezing, cold symptoms",
+    "answer": "General: Colds are very common and usually mild. Most people feel better within about one to two weeks. Self-care: Rest, drink plenty of fluids, and ask a pharmacist about ways to ease symptoms. See a GP or call NHS 111 if: symptoms last more than three weeks, suddenly get worse, or you feel very unwell. Call 999 if: there is severe difficulty breathing or chest pain."
+  },
+  {
+    "id": "sore_throat",
+    "question": "Sore throat: painful throat, painful to swallow, tonsils",
+    "answer": "General: Sore throats are common and usually get better on their own within about a week. Self-care: Drink plenty of fluids, rest, and ask a pharmacist how to ease the pain. See a GP or call NHS 111 if: it is very painful, lasts longer than a week, you have trouble swallowing, or you have a weakened immune system. Call 999 if: you have trouble breathing or a very swollen throat."
+  },
+  {
+    "id": "headache",
+    "question": "Headache: head pain, head ache, migraine, tension headache, headache warning signs",
+    "answer": "General: Most headaches are not serious. Tension and not drinking enough fluids are common causes. Self-care: Rest, drink water, and ask a pharmacist for advice on easing the pain. See a GP or call NHS 111 if: headaches are frequent, keep coming back, are getting worse, or do not improve. Call 999 if: it comes on suddenly and is the worst headache you have ever had, or comes with a stiff neck, a rash, confusion, weakness or numbness, difficulty speaking, vision problems, or follows a head injury."
+  },
+  {
+    "id": "fever",
+    "question": "Fever: high temperature, normal temperature, body temperature, thermometer",
+    "answer": "General: A normal body temperature is usually around 36 to 37 degrees Celsius. A high temperature, or fever, is usually 38 degrees or above. Self-care: Rest and drink plenty of fluids. See a GP or call NHS 111 if: the fever has not gone after three to four days, you feel very unwell, you are pregnant or have a weakened immune system, or it is a baby or young child, who should always be assessed by a GP or NHS 111. Call 999 if: there is a stiff neck, a rash that does not fade when a glass is pressed on it, confusion, difficulty breathing, or a seizure."
+  },
+  {
+    "id": "cough",
+    "question": "Cough: coughing, dry cough, chesty cough",
+    "answer": "General: Most coughs clear up within about three weeks. Self-care: Rest, drink plenty of fluids, and ask a pharmacist about ways to ease it. See a GP or call NHS 111 if: the cough lasts longer than three weeks, you are losing weight, you have a long-term health condition, or you cough up blood, which needs urgent help. Call 999 if: there is severe difficulty breathing or chest pain."
+  },
+  {
+    "id": "sickness_diarrhoea",
+    "question": "Diarrhoea and vomiting: sickness bug, stomach upset, being sick, loose stools, dehydration",
+    "answer": "General: Sickness and diarrhoea bugs usually clear up on their own within a few days. Self-care: Sip fluids regularly to avoid dehydration, rest, and ask a pharmacist about oral rehydration drinks. See a GP or call NHS 111 if: you cannot keep fluids down, have signs of dehydration such as a very dry mouth, dizziness or passing little urine, have blood in your vomit or stools, it lasts more than a week, or it is a baby, young child or older person. Call 999 if: you collapse, are very confused or drowsy, or have severe stomach pain that will not settle."
+  },
+  {
+    "id": "back_pain",
+    "question": "Back pain: lower back pain, sore back, pulled muscle in back, sciatica",
+    "answer": "General: Most lower back pain is not serious and usually improves within a few weeks. Self-care: Keep moving gently and stay active as far as you can, because long bed rest usually slows recovery. See a GP or call NHS 111 if: the pain is severe, is not improving after a few weeks, or spreads down a leg. Call 999 if: you have numbness around your genitals or buttocks, lose control of your bladder or bowels, have weakness in your legs, or the pain follows a serious injury. Call 999 or go to A&E."
+  }
+]

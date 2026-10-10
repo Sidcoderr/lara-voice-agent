@@ -1,0 +1,12 @@
+.env
+.venv
+__pycache__/
+*.pyc
+.git
+.gitignore
+*.log
+run.log
+data/surgery.db
+*.db
+tests/
+docs/

@@ -1,0 +1,17 @@
+[project]
+name = "patient-support-agent"
+version = "0.1.0"
+description = "Voice agent for patient support and appointment scheduling"
+requires-python = ">=3.11"
+dependencies = [
+    "pipecat-ai[google,deepgram,elevenlabs,runner,silero,webrtc]",
+    "python-dotenv>=1.0.0",
+    "loguru>=0.7.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = false
