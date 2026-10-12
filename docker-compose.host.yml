@@ -1,0 +1,14 @@
+# The same service, using the host's network directly. Only needed if a call connects but is silent with the
+# normal file. Not yet tried.
+#   - On a Linux machine or server: works as it is.
+#   - On Docker Desktop (Windows or Mac): first turn on Settings > Resources > Network > "Enable host networking"
+#     (Docker Desktop 4.34 or later), then:  docker compose -f docker-compose.host.yml up --build
+# No "ports" here: in host mode the container shares the host's ports, so 7860 is reachable directly.
+services:
+  lara:
+    build: .
+    network_mode: host
+    env_file: .env
+    volumes:
+      - ./data:/app/data
+    restart: "no"

@@ -20,8 +20,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from dotenv import dotenv_values
-
 SKIP_DIRS = {".venv", "venv", ".git", "__pycache__", "node_modules", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 SKIP_FILES = {"uv.lock"}  # full of hashes that look like keys
 MAX_BYTES = 5_000_000
@@ -95,12 +93,31 @@ def is_ignored(rel_path: str, patterns: list[str]) -> bool:
     return False
 
 
+def _parse_env(text: str) -> dict:
+    """Read KEY=VALUE lines. Handles comments, quotes, 'export' and Windows line endings."""
+    values = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        if line.startswith("export "):
+            line = line[len("export "):].lstrip()
+        name, _, value = line.partition("=")
+        value = value.strip()
+        if value[:1] in ("'", '"') and value[-1:] == value[:1] and len(value) >= 2:
+            value = value[1:-1]
+        else:
+            value = re.split(r"\s+#", value, maxsplit=1)[0].strip()  # an unquoted trailing comment
+        values[name.strip()] = value
+    return values
+
+
 def _env_secrets(root: Path) -> list[str]:
     path = root / ".env"
     if not path.exists():
         return []
     values = []
-    for name, value in dotenv_values(path).items():
+    for name, value in _parse_env(path.read_text(encoding="utf-8", errors="replace")).items():
         if value and SECRET_NAME.search(name) and len(value) >= 8 and not PLACEHOLDER.search(value):
             values.append(value)
     return values

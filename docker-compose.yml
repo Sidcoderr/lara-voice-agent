@@ -1,5 +1,10 @@
 # One command to run Lara in a container:   docker compose up --build
 # Put your API keys in a file called .env first (copy .env.example). They are never baked into the image.
+#
+# The web pages (/client and /staff) and the call's audio both worked through the mapped port when tested on
+# Docker Desktop for Windows. UDP forwarding can differ on other systems: if you can open /client but hear
+# nothing, use the other file:
+#   docker compose -f docker-compose.host.yml up --build
 services:
   lara:
     build: .

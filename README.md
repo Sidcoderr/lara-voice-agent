@@ -104,18 +104,36 @@ uv run bot.py
 
 The first run creates `data/surgery.db` with demo patients. Delete that file to reset the demo.
 
-## Docker (not yet tested)
+## Docker
 
-A `Dockerfile` and `docker-compose.yml` are included: put your keys in `.env`, then run
-`docker compose up --build` and open <http://localhost:7860/client>. **I have not run this yet.**
-One known risk: the browser's audio travels over WebRTC, which uses UDP, and that can fail to connect
-through Docker's port mapping on Windows and macOS. The staff page and the server should work; live voice
-may not. Running natively with `uv run bot.py` is the supported way.
+`docker compose up --build` builds an image (Python 3.12, the locked dependencies from `uv.lock`, and the code)
+and starts Lara on <http://localhost:7860>, with the staff page at `/staff` and the call screen at `/client`.
+The API keys are read from `.env` and are never baked into the image. The demo database is kept in `./data`.
+
+**Tested** on Docker Desktop for Windows with WSL 2 (Docker 29.7, Compose 5.3, 10 October 2026): the image builds,
+the container starts and passes its health check, and a live voice call works through the normal port mapping.
+Microphone audio reaches the container and is transcribed, the model replies, and the call summary is saved.
+Host networking was not needed.
+
+**Not tested:** macOS, Linux, and running on a server. The browser's audio uses WebRTC over UDP, which Docker
+Desktop does not always forward. If a call connects but is silent, use `docker-compose.host.yml` instead: it
+shares the host's network, which is what WebRTC needs. On Docker Desktop, first turn on Settings > Resources >
+Network > Enable host networking. That file has not been tried.
+
+**How I would deploy it for real.** On a Linux server with Docker, using `docker-compose.host.yml`. Browsers
+only allow the microphone on https or localhost, so it would sit behind a TLS reverse proxy such as Caddy.
+Callers behind strict firewalls need a TURN server. The managed alternative is Pipecat's own cloud, which runs
+the same pipeline with a hosted WebRTC transport.
+
+**Not done:** the container runs as root, `/staff` has no login, and there is no TLS.
 
 ## Clean demo data
 
 `uv run python reset_demo.py` clears every request, booking and call summary and restores the demo
 patients with fresh sample appointments. It works while the bot is running.
+
+To play the demo patient yourself, give the reset your full name: `uv run python reset_demo.py --me "Your Name"`.
+It replaces the demo patient "Sid" (date of birth 9 May 2001); say your full name when Lara asks.
 
 ## Try it
 
@@ -234,7 +252,7 @@ licence, and have it signed off by a clinical safety officer.
 - Speech is English only
 - Speech recognition can mishear names and accents. Two optional settings help: `DEEPGRAM_LANGUAGE=en-IN` (Indian English) and `DEEPGRAM_KEYTERMS=Lara,Riverside Surgery,...` (names to listen for). Both are Nova-3 features and are off by default
 - No phone number: the agent is reached from a browser (WebRTC). A phone line would be a transport setting in Pipecat, not a rebuild, but it is not built
-- The Docker setup is written but untested
+- Docker is tested on one machine only (Docker Desktop for Windows); other systems and server deployment are not
 - The keyword emergency safety net is cautious and simple: it can fire on a mere mention and can miss unusual wording
 
 ## Licence
