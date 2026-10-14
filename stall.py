@@ -13,16 +13,17 @@ STALL_SECONDS=8 changes how long it waits (default 5).
 
 import asyncio
 import random
+import time
 
 from loguru import logger
 from pipecat.frames.frames import (
     CancelFrame,
     EndFrame,
+    ErrorFrame,
     Frame,
     FunctionCallsStartedFrame,
     InterruptionFrame,
     LLMContextFrame,
-    LLMFullResponseStartFrame,
     LLMTextFrame,
     TTSSpeakFrame,
     UserStartedSpeakingFrame,
@@ -31,19 +32,25 @@ from pipecat.processors.frame_processor import FrameDirection, FrameProcessor
 
 PHRASES = ["Sorry, just a moment.", "Bear with me, one second."]
 DEFAULT_SECONDS = 5.0
+APOLOGY = "Sorry, I'm having a little trouble at the moment. Could you say that again?"
 
 
-def stall_seconds_from_env(value: str | None) -> float:
-    """How long to wait before speaking. 0 means off ('off', '0' or 'no' all switch it off)."""
+def seconds_from_env(value: str | None, default: float) -> float:
+    """A number of seconds from a setting. 0 means off ('off', 'no', 'false' and '0' all switch it off)."""
     text = (value or "").strip().lower()
     if not text:
-        return DEFAULT_SECONDS
+        return default
     if text in ("off", "no", "false", "0"):
         return 0.0
     try:
         return max(0.0, float(text))
     except ValueError:
-        return DEFAULT_SECONDS
+        return default
+
+
+def stall_seconds_from_env(value: str | None) -> float:
+    """How long to wait before saying the holding phrase. 0 means off."""
+    return seconds_from_env(value, DEFAULT_SECONDS)
 
 
 class StallGuard:
@@ -103,8 +110,37 @@ class StallWatcher(FrameProcessor):
             self.guard.start()  # a tool result is going back to the model
         elif isinstance(
             frame,
-            (LLMFullResponseStartFrame, LLMTextFrame, FunctionCallsStartedFrame, TTSSpeakFrame,
-             InterruptionFrame, UserStartedSpeakingFrame, EndFrame, CancelFrame),
+            # Real progress only. NOT LLMFullResponseStartFrame: Pipecat sends that the moment a request
+            # BEGINS, before the model has answered, so stopping on it would cancel the timer every time.
+            (LLMTextFrame, FunctionCallsStartedFrame, TTSSpeakFrame, InterruptionFrame,
+             UserStartedSpeakingFrame, EndFrame, CancelFrame),
         ):
             self.guard.stop()
         await self.push_frame(frame, direction)
+
+
+class ErrorApology:
+    """Say a short apology when the language model fails, instead of leaving the caller in silence.
+
+    Gemini's free tier sometimes answers "503: high demand" or never answers (Pipecat gives up after 20
+    seconds). Both arrive as an error from the model's own processor. This speaks once, and not again for
+    `min_gap` seconds, so a run of failures does not become a run of apologies. ERROR_APOLOGY=off disables it.
+    """
+
+    def __init__(self, llm, min_gap: float = 15.0, clock=time.monotonic):
+        self._llm = llm
+        self._min_gap = min_gap
+        self._clock = clock
+        self._last: float | None = None
+
+    async def __call__(self, worker, frame) -> bool:
+        """Handler for the pipeline's on_pipeline_error event. Returns True if it spoke."""
+        if not isinstance(frame, ErrorFrame) or getattr(frame, "processor", None) is not self._llm:
+            return False
+        now = self._clock()
+        if self._last is not None and now - self._last < self._min_gap:
+            return False
+        self._last = now
+        logger.warning(f"Model failed ({str(frame.error)[:80]}): saying a short apology")
+        await worker.queue_frames([TTSSpeakFrame(APOLOGY, append_to_context=False)])
+        return True

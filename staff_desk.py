@@ -16,6 +16,11 @@ from html import escape
 import surgery_clock as clock
 import surgery_db as db
 
+try:  # the staff page must never depend on this extra: without it the page simply shows no progress lines
+    import request_updates as ru
+except Exception:  # noqa: BLE001
+    ru = None
+
 _URGENCY_LABEL = {"emergency": "Emergency", "urgent": "Urgent", "routine": "Routine"}
 
 
@@ -41,6 +46,38 @@ def _e(value) -> str:
     return escape(str(value if value is not None else ""))
 
 
+def _with_updates(snapshot: dict) -> dict:
+    """Add staff progress to the snapshot. If anything is missing or fails, return the snapshot unchanged."""
+    try:
+        return ru.attach(snapshot) if ru is not None else snapshot
+    except Exception:  # noqa: BLE001
+        return snapshot
+
+
+def _progress(item: dict, today: dt.date) -> str:
+    """A short line when staff have updated this request ("In progress: ..."). Empty when they have not, so the page is unchanged."""
+    update = item.get("update")
+    if not update:
+        return ""
+    label = "In progress" if update["status"] == "in_progress" else "Done"
+    note = f": {update['note']}" if update["note"] else ""
+    when = _when(update["created_at"], today)
+    if when.startswith(("Today", "Yesterday")):
+        when = when[0].lower() + when[1:]
+    return f"{label}{note} (updated {when})"
+
+
+def _progress_html(item: dict, today: dt.date) -> str:
+    text = _progress(item, today)
+    return f'<p class="progress">{_e(text)}</p>' if text else ""
+
+
+def _after(item: dict, today: dt.date) -> str:
+    """The progress line to add after a table cell's text: nothing when staff have not updated the request."""
+    text = _progress(item, today)
+    return f"  |  {text}" if text else ""
+
+
 def _request_rows(callbacks: list[dict], today: dt.date) -> str:
     if not callbacks:
         return (
@@ -59,7 +96,7 @@ def _request_rows(callbacks: list[dict], today: dt.date) -> str:
             f'<span>{_e(_when(item["created_at"], today))}</span></div>'
             f'<div class="what"><p class="who">{_e(who)}. {_e(kind)}.</p>'
             f'<p>{_e(item["reason"])}</p>'
-            f'<p class="muted">{_e(phone)}{extra}</p></div></li>'
+            f'<p class="muted">{_e(phone)}{extra}</p>{_progress_html(item, today)}</div></li>'
         )
     return f'<ul class="requests">{"".join(rows)}</ul>'
 
@@ -78,7 +115,7 @@ def _waiting_rows(waiting: list[dict], today: dt.date) -> str:
             f'<li class="request {"urgent" if free else "routine"}">'
             f'<div class="when"><strong>{label}</strong><span>{_e(_when(item["created_at"], today))}</span></div>'
             f'<div class="what"><p class="who">{_e(item["patient_name"])}. Waiting for a {_e(kind)}.</p>'
-            f'{f"<p>{detail}</p>" if detail else ""}{wants}</div></li>'
+            f'{f"<p>{detail}</p>" if detail else ""}{wants}{_progress_html(item, today)}</div></li>'
         )
     return f'<ul class="requests">{"".join(rows)}</ul>'
 
@@ -146,6 +183,7 @@ background:var(--surface);border-left:5px solid var(--line)}
 .call{border-left-color:var(--brand)}
 .call ul{list-style:disc;padding-left:20px;margin:6px 0;font-size:.94rem}
 .follow{margin-top:6px}
+.progress{margin-top:6px;color:var(--brand);font-weight:600;font-size:.92rem}
 .scroll{overflow-x:auto;margin-top:10px}
 table{border-collapse:collapse;width:100%;background:var(--surface)}
 th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -171,12 +209,12 @@ def render_page(snapshot: dict) -> str:
     admin = _table(
         ["Requested", "Patient", "Type", "Details", "Phone"],
         [[_when(a["created_at"], today), a["patient_name"], db.ADMIN_TYPES.get(a["request_type"], a["request_type"]),
-          a["details"], _phone(a["phone_number"])] for a in snapshot["admin_requests"]],
+          a["details"] + _after(a, today), _phone(a["phone_number"])] for a in snapshot["admin_requests"]],
         "No admin requests waiting.",
     )
     prescriptions = _table(
         ["Requested", "Patient", "Medicine"],
-        [[_when(p["created_at"], today), p["patient_name"], p["medication"]]
+        [[_when(p["created_at"], today), p["patient_name"], p["medication"] + _after(p, today)]
          for p in snapshot["prescriptions"]],
         "No repeat prescription requests waiting.",
     )
@@ -212,11 +250,11 @@ def register_staff_routes(app) -> None:
 
     @app.get("/staff", response_class=HTMLResponse)
     async def staff_page():
-        return HTMLResponse(render_page(db.staff_snapshot()))
+        return HTMLResponse(render_page(_with_updates(db.staff_snapshot())))
 
     @app.get("/staff/data")
     async def staff_data():
-        return JSONResponse(db.staff_snapshot())
+        return JSONResponse(_with_updates(db.staff_snapshot()))
 
 
 def print_summary() -> None:

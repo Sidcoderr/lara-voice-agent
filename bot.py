@@ -31,16 +31,18 @@ from pipecat.runner.utils import create_transport
 from pipecat.services.google.llm import GoogleLLMService
 from pipecat.services.deepgram.stt import DeepgramSTTService
 from pipecat.services.elevenlabs.tts import ElevenLabsHttpTTSService
+from pipecat.processors.frameworks.rtvi import RTVIFunctionCallReportLevel, RTVIObserverParams
 from pipecat.transcriptions.language import Language
+from pipecat.turns.empty_user_turn import EmptyUserTurnConfig
 from pipecat.transports.base_transport import TransportParams
 
 import surgery_clock
 from call_summary import finish_call
 from fillers import attach_fillers
 from llm_options import reasoning_effort_for
-from prompts import build_system_prompt, greeting_instruction, greeting_text
+from prompts import NOT_HEARD_PROMPT, build_system_prompt, greeting_instruction, greeting_text
 from red_flags import RedFlagProcessor
-from stall import StallWatcher, stall_seconds_from_env
+from stall import ErrorApology, StallWatcher, seconds_from_env, stall_seconds_from_env
 from tools import SessionState, build_tools
 
 load_dotenv(override=True)
@@ -99,9 +101,14 @@ def build_llm(system_prompt: str):
             llm.supports_developer_role = False  # most other services do not accept that role
         return llm, f"openai:{model}" + (f" at {base_url}" if base_url else "")
     model = os.getenv("GOOGLE_MODEL", DEFAULT_MODEL)
+    # If the first word has not arrived after LLM_RETRY_SECS (default 6), send the request once more: a
+    # slow request is often a stuck one. LLM_RETRY_SECS=off turns this off.
+    retry_secs = seconds_from_env(os.getenv("LLM_RETRY_SECS"), 6.0)
     llm = GoogleLLMService(
         api_key=os.getenv("GOOGLE_API_KEY"),
         settings=GoogleLLMService.Settings(model=model, system_instruction=system_prompt),
+        retry_on_timeout=retry_secs > 0,
+        retry_timeout_secs=retry_secs if retry_secs > 0 else 5.0,
     )
     return llm, f"google:{model}"
 
@@ -123,6 +130,29 @@ def build_vad():
     except Exception as error:  # noqa: BLE001
         logger.warning(f"Voice activity detection is unavailable ({error!r}); carrying on without it.")
         return None
+
+
+def build_empty_turn_config() -> EmptyUserTurnConfig:
+    """What Lara does when the caller clearly spoke but no words were recognised.
+
+    By default Pipecat only answers such a turn if it interrupted Lara, and stays silent otherwise, which
+    feels like being ignored. Here, when she was waiting for the caller, she says she did not catch it
+    and asks them to repeat. At most two such replies in a row (a cough or noise should not start a loop).
+    NOT_HEARD=off goes back to Pipecat's default.
+    """
+    if os.getenv("NOT_HEARD", "on").strip().lower() == "off":
+        return EmptyUserTurnConfig()
+    return EmptyUserTurnConfig(idle_prompt=NOT_HEARD_PROMPT, max_consecutive_recoveries=2)
+
+
+def build_rtvi_params() -> RTVIObserverParams | None:
+    """Keep function calls out of the browser's event stream, so the call screen stays clean.
+
+    (By default Pipecat tells the browser every time a tool is called.) SHOW_TOOL_EVENTS=on shows them again.
+    """
+    if os.getenv("SHOW_TOOL_EVENTS", "off").strip().lower() in ("on", "yes", "true", "1"):
+        return None
+    return RTVIObserverParams(function_call_report_level={"*": RTVIFunctionCallReportLevel.DISABLED})
 
 
 def build_stt():
@@ -195,7 +225,7 @@ async def run_bot(transport, runner_args: RunnerArguments):
     vad = build_vad()
     logger.info(f"[{state.session_id}] Voice activity detection: {'on' if vad else 'off'}")
     user_aggregator, assistant_aggregator = LLMContextAggregatorPair(
-        context, user_params=LLMUserAggregatorParams(vad_analyzer=vad)
+        context, user_params=LLMUserAggregatorParams(vad_analyzer=vad, empty_user_turn=build_empty_turn_config())
     )
 
     # --- Pipeline ----------------------------------------------------------
@@ -237,10 +267,25 @@ async def run_bot(transport, runner_args: RunnerArguments):
     worker = PipelineWorker(
         pipeline,
         params=PipelineParams(enable_metrics=True, enable_usage_metrics=True),
+        rtvi_observer_params=build_rtvi_params(),
     )
+    logger.info(f"[{state.session_id}] Not-heard reply: {'off' if os.getenv('NOT_HEARD', 'on').strip().lower() == 'off' else 'on'}"
+                f" | tool events in the browser: {'shown' if build_rtvi_params() is None else 'hidden'}")
 
     runner = WorkerRunner(handle_sigint=runner_args.handle_sigint)
     await runner.add_workers(worker)
+
+    # If the model fails outright (a 503 "high demand" or no answer at all), say a short apology
+    # instead of leaving silence. ERROR_APOLOGY=off turns it off.
+    apology_on = os.getenv("ERROR_APOLOGY", "on").strip().lower() != "off"
+    if apology_on:
+        apologise = ErrorApology(llm)
+
+        @worker.event_handler("on_pipeline_error")
+        async def on_pipeline_error(worker, frame):
+            await apologise(worker, frame)
+
+    logger.info(f"[{state.session_id}] Error apology: {'on' if apology_on else 'off'}")
 
     @worker.rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
@@ -286,5 +331,15 @@ if __name__ == "__main__":
         register_staff_routes(app)
     except Exception as error:  # noqa: BLE001
         logger.warning(f"Staff desk page not available: {error!r}")
+
+    # A page where a patient can see their own bookings and requests ("My requests").
+    # PATIENT_PAGE=off turns it off. Like the staff page, if it fails Lara still works.
+    if os.getenv("PATIENT_PAGE", "on").strip().lower() != "off":
+        try:
+            from patient_view import register_patient_routes
+
+            register_patient_routes(app)
+        except Exception as error:  # noqa: BLE001
+            logger.warning(f"Patient page not available: {error!r}")
 
     main()

@@ -72,7 +72,7 @@ COMPACT_SYSTEM_PROMPT = """You are Lara, an AI receptionist for Riverside Surger
 - Say dates and times naturally ("Tuesday the sixth of October at half past two"). Never read out YYYY-MM-DD, 24-hour times, or booking references unless asked.
 - Be warm, calm and unhurried; callers are often anxious.
 - You cannot transfer calls, put anyone on hold or bring in a colleague, and must never imply you can. When something needs a person, record a request and say the team will be in touch. Never promise a time.
-- If the caller's sentence sounds cut off (for example it ends in "the" or "and"), do not act on it: ask them to finish.
+- If the caller's sentence sounds cut off (for example it ends in "the" or "and"), do not act on it: ask them to finish. If what you heard is unclear, garbled or does not fit the conversation, do not guess and do not act on it: say \"Sorry, I didn't catch that. Could you say it again?\" Short answers such as yes, no or okay are fine.
 
 ## What you do
 - Surgery information (how to register, what to bring, blood test prep, interpreters, parking): use search_knowledge_base, never memory. Whether the surgery is open, now or on a day: get_surgery_status.
@@ -128,6 +128,15 @@ def build_system_prompt() -> str:
         "Work out words like 'tomorrow' or 'next Tuesday' from today's date, never guess, and never "
         "offer a date in the past.\n"
     )
+
+
+# What the model is told when the caller clearly spoke but NO words were recognised (a turn with no transcript).
+# Pipecat adds this as a developer message and runs the model once. Used by bot.py.
+NOT_HEARD_PROMPT = (
+    "The caller spoke, but their words were not recognised. In one short sentence, say you did not catch "
+    "that and ask them to say it again. If you have already said this in the last few turns, suggest "
+    "speaking a little closer to the microphone instead. Do not guess what they said and do not use any tools."
+)
 
 
 def greeting_text(surgery_open: bool) -> str:
